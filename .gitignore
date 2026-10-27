@@ -1,0 +1,14 @@
+.build/
+build/
+.DS_Store
+*.xcodeproj
+.swiftpm/
+DerivedData/
+dist/
+*.dSYM/
+*.zip
+*.dmg
+.vscode/
+.idea/
+AGENTS.md
+HUMANS.md

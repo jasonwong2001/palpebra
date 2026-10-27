@@ -1,0 +1,84 @@
+name: Bug report
+description: Report incorrect behavior or a reproducible failure.
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For vulnerabilities, use the private reporting link in the issue chooser or SECURITY.md.
+        Please redact personal history, file paths and other private data from attachments.
+  - type: input
+    id: macos-version
+    attributes:
+      label: macOS version
+      description: Include the version number and whether the Mac uses Apple silicon or Intel.
+      placeholder: "macOS 15.7, Apple silicon"
+    validations:
+      required: true
+  - type: input
+    id: app-version
+    attributes:
+      label: Palpebra version and build
+      description: See Settings → About. For a source build, include the commit if known.
+      placeholder: "1.0.0 (build number)"
+    validations:
+      required: true
+  - type: dropdown
+    id: reminder-style
+    attributes:
+      label: Reminder style
+      options:
+        - Full-screen popup
+        - Mini popup
+        - Notification
+        - Not related to reminders
+    validations:
+      required: true
+  - type: dropdown
+    id: detection-mode
+    attributes:
+      label: Detection mode
+      options:
+        - Smart
+        - Always on
+        - Unsure
+    validations:
+      required: true
+  - type: dropdown
+    id: video-detection
+    attributes:
+      label: Count video playback as screen use
+      options:
+        - Enabled
+        - Disabled
+        - Unsure
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Include relevant rule values, skip mode, lock/sleep state and notification permission.
+      placeholder: |
+        1. Set ...
+        2. Choose ...
+        3. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Screenshots or other context
+      description: Optional. Include only redacted logs or minimal sample data you are comfortable making public.

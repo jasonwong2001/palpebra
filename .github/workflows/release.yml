@@ -1,0 +1,89 @@
+name: Draft release
+
+"on":
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  release:
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6 # Owner: confirm or pin to a SHA on first push.
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Select latest stable Xcode 26
+        run: |
+          xcode_app="$(find /Applications -maxdepth 1 -type d -name 'Xcode_26*.app' ! -iname '*beta*' -print | sort -V | tail -n 1)"
+          if [[ -z "$xcode_app" ]]; then
+            installed="$(find /Applications -maxdepth 1 -type d -name 'Xcode*.app' -print | sort -V | paste -sd ',' -)"
+            echo "::error::No non-beta /Applications/Xcode_26*.app bundle found." \
+              "Installed /Applications/Xcode*.app bundles: ${installed:-(none)}." \
+              "Use runs-on: macos-26 or select a different Xcode path."
+            exit 1
+          fi
+          echo "Selected $xcode_app"
+          echo "DEVELOPER_DIR=$xcode_app/Contents/Developer" >> "$GITHUB_ENV"
+
+      - name: Swift version
+        run: |
+          swift_version="$(swift --version)"
+          printf '%s\n' "$swift_version"
+          if [[ ! "$swift_version" =~ Swift[[:space:]]version[[:space:]]([0-9]+)\.([0-9]+) ]] ||
+             (( BASH_REMATCH[1] < 6 || (BASH_REMATCH[1] == 6 && BASH_REMATCH[2] < 2) )); then
+            echo "::error::Swift 6.2 or newer is required to match local development. Check DEVELOPER_DIR ($DEVELOPER_DIR)."
+            exit 1
+          fi
+          swift format --version
+
+      - name: Check tag matches VERSION
+        run: |
+          version="$(cat VERSION)"
+          if [[ "$GITHUB_REF_NAME" != "v$version" ]]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match VERSION ($version)."
+            exit 1
+          fi
+
+      - name: Package tagged release
+        run: ./scripts/release.sh
+
+      - name: Extract release notes
+        run: |
+          version="$(cat VERSION)"
+          awk -v version="$version" '
+            /^## / {
+              if (in_section) exit
+              in_section = ($2 == "[" version "]")
+              next
+            }
+            in_section { print }
+          ' CHANGELOG.md > "$RUNNER_TEMP/release-notes.md"
+          if ! grep -q '[^[:space:]]' "$RUNNER_TEMP/release-notes.md"; then
+            echo "::warning::No release notes found for $version in CHANGELOG.md. Review the draft before publishing."
+            printf 'No CHANGELOG.md section with release notes was found for %s.\n\nReview CHANGELOG.md and add release notes before publishing this draft.\n' \
+              "$version" > "$RUNNER_TEMP/release-notes.md"
+          fi
+
+      - name: Create draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          version="$(cat VERSION)"
+          gh release create "$GITHUB_REF_NAME" \
+            "dist/Palpebra-${version}.zip" dist/SHA256SUMS \
+            --draft --verify-tag --title "Palpebra $version" \
+            --notes-file "$RUNNER_TEMP/release-notes.md"

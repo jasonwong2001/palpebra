@@ -1,0 +1,118 @@
+name: CI
+
+"on":
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  check:
+    name: Lint, build, test and bundle
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6 # Owner: confirm or pin to a SHA on first push.
+        with:
+          persist-credentials: false
+
+      - name: Select latest stable Xcode 26
+        run: |
+          xcode_app="$(find /Applications -maxdepth 1 -type d -name 'Xcode_26*.app' ! -iname '*beta*' -print | sort -V | tail -n 1)"
+          if [[ -z "$xcode_app" ]]; then
+            installed="$(find /Applications -maxdepth 1 -type d -name 'Xcode*.app' -print | sort -V | paste -sd ',' -)"
+            echo "::error::No non-beta /Applications/Xcode_26*.app bundle found." \
+              "Installed /Applications/Xcode*.app bundles: ${installed:-(none)}." \
+              "Use runs-on: macos-26 or select a different Xcode path."
+            exit 1
+          fi
+          echo "Selected $xcode_app"
+          echo "DEVELOPER_DIR=$xcode_app/Contents/Developer" >> "$GITHUB_ENV"
+
+      - name: Swift version
+        run: |
+          swift_version="$(swift --version)"
+          printf '%s\n' "$swift_version"
+          if [[ ! "$swift_version" =~ Swift[[:space:]]version[[:space:]]([0-9]+)\.([0-9]+) ]] ||
+             (( BASH_REMATCH[1] < 6 || (BASH_REMATCH[1] == 6 && BASH_REMATCH[2] < 2) )); then
+            echo "::error::Swift 6.2 or newer is required to match local development. Check DEVELOPER_DIR ($DEVELOPER_DIR)."
+            exit 1
+          fi
+          swift format --version
+
+      - name: Lint
+        run: swift format lint --strict --recursive Sources Tests
+
+      - name: Check packaging flags
+        run: ./scripts/check-build-flags.sh
+
+      - name: Build release
+        run: swift build -c release
+
+      - name: Test
+        run: ./scripts/test.sh
+
+      - name: Bundle and zip app
+        run: |
+          CONFIG=release ./scripts/make-app.sh
+          ditto -c -k --keepParent build/Palpebra.app build/Palpebra.zip
+
+      - name: Upload app
+        uses: actions/upload-artifact@v6 # Owner: confirm or pin to a SHA on first push.
+        with:
+          name: Palpebra-${{ github.run_number }}
+          path: build/Palpebra.zip
+          if-no-files-found: error
+          retention-days: 14
+
+  self-test:
+    name: Optional GUI self-test
+    runs-on: macos-15
+    continue-on-error: true
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6 # Owner: confirm or pin to a SHA on first push.
+        with:
+          persist-credentials: false
+
+      - name: Select latest stable Xcode 26
+        run: |
+          xcode_app="$(find /Applications -maxdepth 1 -type d -name 'Xcode_26*.app' ! -iname '*beta*' -print | sort -V | tail -n 1)"
+          if [[ -z "$xcode_app" ]]; then
+            installed="$(find /Applications -maxdepth 1 -type d -name 'Xcode*.app' -print | sort -V | paste -sd ',' -)"
+            echo "::error::No non-beta /Applications/Xcode_26*.app bundle found." \
+              "Installed /Applications/Xcode*.app bundles: ${installed:-(none)}." \
+              "Use runs-on: macos-26 or select a different Xcode path."
+            exit 1
+          fi
+          echo "Selected $xcode_app"
+          echo "DEVELOPER_DIR=$xcode_app/Contents/Developer" >> "$GITHUB_ENV"
+
+      - name: Swift version
+        run: |
+          swift_version="$(swift --version)"
+          printf '%s\n' "$swift_version"
+          if [[ ! "$swift_version" =~ Swift[[:space:]]version[[:space:]]([0-9]+)\.([0-9]+) ]] ||
+             (( BASH_REMATCH[1] < 6 || (BASH_REMATCH[1] == 6 && BASH_REMATCH[2] < 2) )); then
+            echo "::error::Swift 6.2 or newer is required to match local development. Check DEVELOPER_DIR ($DEVELOPER_DIR)."
+            exit 1
+          fi
+          swift format --version
+
+      - name: Build DEBUG bundle
+        run: CONFIG=debug ./scripts/make-app.sh
+
+      # Hosted macOS runners have a GUI session; the DEBUG hook isolates all app storage.
+      - name: Run isolated self-test
+        timeout-minutes: 1
+        run: PALPEBRA_SELFTEST=1 build/Palpebra.app/Contents/MacOS/Palpebra

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security vulnerability privately
+    url: https://github.com/jasonwong2001/palpebra/security/advisories/new
+    about: Report a security vulnerability privately to the maintainers.
+  - name: Code of Conduct and private conduct reports
+    url: https://github.com/jasonwong2001/palpebra/blob/main/CODE_OF_CONDUCT.md
+    about: Read the community standards and find the private enforcement contact.

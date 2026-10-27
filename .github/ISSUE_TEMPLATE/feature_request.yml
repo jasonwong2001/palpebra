@@ -1,0 +1,33 @@
+name: Feature request
+description: Propose a focused improvement to Palpebra.
+title: "[Feature]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Palpebra is an offline, English-only macOS app with no third-party dependencies.
+        Please describe the user need and how the proposal fits that scope.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      description: Describe the situation and who would benefit.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Explain what you would like the app to do.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Include current workarounds or simpler approaches.
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Optional sketches or examples, without private information.
