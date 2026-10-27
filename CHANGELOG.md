@@ -2,6 +2,12 @@
 
 All notable changes to Palpebra are documented here, following [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- Building the app from a downloaded source archive no longer fails for lack of git history. It gets build number 1 unless `BUILD_NUMBER` is set.
+
 ## [1.0.0] - 2026-10-27
 
 The first public release.

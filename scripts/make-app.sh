@@ -22,8 +22,13 @@ version="$(< VERSION)"
 
 build_number="${BUILD_NUMBER:-${GITHUB_RUN_NUMBER:-}}"
 if [[ -z "$build_number" ]]; then
-    build_number="$(git rev-list --count HEAD)" \
-        || fail "Cannot read git history; set BUILD_NUMBER when building a source archive."
+    if [[ -e .git ]]; then
+        build_number="$(git rev-list --count HEAD)" || fail "Cannot read git history; set BUILD_NUMBER."
+    else
+        # A downloaded source archive has no git history to count.
+        build_number=1
+        print -u2 -- "make-app: No git history; using build number 1. Set BUILD_NUMBER to choose another."
+    fi
 fi
 [[ "$build_number" =~ '^[1-9][0-9]*$' ]] || fail "The build number must be a positive integer."
 
