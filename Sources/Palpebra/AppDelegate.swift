@@ -131,8 +131,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                         let visible = (self?.overlay.isVisible ?? false) || (self?.mini.isVisible ?? false)
                         let running = self?.coordinator.phase == .running
                         let keyIsOverlay = NSApp.keyWindow is BreakOverlayWindow
+                        // macOS can refuse to activate the app; then none of its windows can take keystrokes.
+                        let keyWindow = NSApp.keyWindow.map { String(describing: type(of: $0)) } ?? "none"
                         print(
-                            "SELFTEST overlayVisible=\(visible) keyIsOverlay=\(keyIsOverlay) phase=\(String(describing: self?.coordinator.phase))"
+                            "SELFTEST overlayVisible=\(visible) keyIsOverlay=\(keyIsOverlay) appActive=\(NSApp.isActive) keyWindow=\(keyWindow) phase=\(String(describing: self?.coordinator.phase))"
                         )
                         self?.engine.stop()
                         self?.store.save()
