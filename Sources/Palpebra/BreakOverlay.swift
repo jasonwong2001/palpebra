@@ -183,9 +183,10 @@ final class CustomBackground: ObservableObject {
 }
 
 /// Borderless windows refuse keyboard input unless they can become key;
-/// the skip challenge's answer field needs exactly that.
+/// the skip challenge's answer field needs exactly that. A non-activating panel takes the keyboard even when
+/// macOS declines to activate the app, as it may for a break that starts while you work in another app.
 @MainActor
-final class BreakOverlayWindow: NSWindow {
+final class BreakOverlayWindow: NSPanel {
     var escapeHold: EscapeHoldHandler?
     override var canBecomeKey: Bool { true }
 
@@ -233,10 +234,12 @@ final class BreakOverlayController {
 
             let window = BreakOverlayWindow(
                 contentRect: screen.frame,
-                styleMask: [.borderless],
+                styleMask: [.borderless, .nonactivatingPanel],
                 backing: .buffered,
                 defer: false
             )
+            // Panels hide when their app is inactive unless told otherwise.
+            window.hidesOnDeactivate = false
             window.contentView = NSHostingView(rootView: view)
             if skipMode == .locked { window.escapeHold = EscapeHoldHandler(onChanged: onEscapePressed) }
             window.level = .screenSaver
