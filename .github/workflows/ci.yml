@@ -68,7 +68,7 @@ jobs:
           ditto -c -k --keepParent build/Palpebra.app build/Palpebra.zip
 
       - name: Upload app
-        uses: actions/upload-artifact@v6 # Owner: confirm or pin to a SHA on first push.
+        uses: actions/upload-artifact@v7 # Owner: confirm or pin to a SHA on first push.
         with:
           name: Palpebra-${{ github.run_number }}
           path: build/Palpebra.zip
