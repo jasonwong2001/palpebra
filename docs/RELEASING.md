@@ -12,9 +12,10 @@ The current distribution is **ad-hoc signed with hardened runtime and is not not
 
 [VERSION](../VERSION) is the only source of the app version. Use a numeric `major.minor.patch` value suitable for `CFBundleShortVersionString`. The build number is the first available of:
 
-1. `BUILD_NUMBER`, an explicit positive integer (also useful when building an exported source archive).
+1. `BUILD_NUMBER`, an explicit positive integer.
 2. `GITHUB_RUN_NUMBER`, when running in GitHub Actions.
-3. `git rev-list --count HEAD`, for local builds.
+3. `git rev-list --count HEAD`, for local builds from a git checkout.
+4. `1`, with a printed note, when the repository root has no `.git`, as in an extracted source archive.
 
 The bundler copies [Resources/Info.plist](../Resources/Info.plist) and replaces `__VERSION__` and `__BUILD_NUMBER__` with those values before signing. About reads both from the finished bundle. The bundle identifier is defined only in that template; settle its ownership before the first public release. Changing it after release changes the settings domain and notification identity.
 
@@ -53,7 +54,7 @@ It creates `dist/Palpebra-<version>-snapshot-<shortsha>.zip` and `dist/SHA256SUM
 
 ## Cut a public release (owner)
 
-1. Update `VERSION` and add a matching `## [<version>] - YYYY-MM-DD` section in [CHANGELOG.md](../CHANGELOG.md). For 1.0.0, replace `RELEASE_DATE` in the prepared section with the release date. Run [CI's local checks](../CONTRIBUTING.md#checks), finish manual QA and commit every intended input. Wait for CI on the reviewed `main` commit before tagging.
+1. Update `VERSION`, add a matching `## [<version>] - YYYY-MM-DD` section in [CHANGELOG.md](../CHANGELOG.md), and change the `Palpebra-<version>.zip` name in the README's [download and install steps](../README.md#install). For 1.0.0, replace `RELEASE_DATE` in the prepared section with the release date. Run [CI's local checks](../CONTRIBUTING.md#checks), finish manual QA and commit every intended input. Wait for CI on the reviewed `main` commit before tagging.
 2. On that exact commit, the owner creates and pushes the version tag:
 
    ```sh
@@ -64,11 +65,13 @@ It creates `dist/Palpebra-<version>-snapshot-<shortsha>.zip` and `dist/SHA256SUM
 
 3. The tag push starts [Draft release](../.github/workflows/release.yml) on `macos-15` with the same explicit stable Xcode 26 selection and Swift version checks as CI. It fetches the full history and tags, checks the triggering tag against `VERSION`, and runs `./scripts/release.sh` in default tagged mode. The script requires the matching tag at `HEAD` and a clean checkout, builds the universal app, ad-hoc signs with hardened runtime, and writes the zip and checksum. The CI run number becomes the bundle build number. No signing secrets are used.
 4. The workflow extracts only the matching version's changelog section, stopping at the next version heading. If the section is absent or empty, the workflow emits a warning and uses explicit placeholder notes telling the owner to add release notes before publishing. It does not substitute the Unreleased section.
-5. Using the workflow's GitHub token, `gh release create --draft --verify-tag` creates a **draft**, attaching `Palpebra-<version>.zip` and `SHA256SUMS`. Only this workflow has `contents: write`; CI remains read-only. The release workflow does not publish the release or create a missing tag. A rerun for a tag with an existing release fails rather than overwriting it; inspect the existing draft and assets before any owner cleanup.
-6. Download the draft assets and verify their checksum. Extract the zip to a temporary directory, verify the app's signature and both architectures, then test native/Rosetta launches and installation on a second user account. Review the notes and replace any fallback text.
-7. For the first release, make the repository public, enable Private vulnerability reporting under Settings → Advanced Security, and set up protection for `main`. Add the repository description and topics, and a contact method on your GitHub profile for conduct reports. Then publish the draft release.
+5. Using the workflow's GitHub token, `gh release create --draft --verify-tag` creates a **draft**, attaching `Palpebra-<version>.zip` and `SHA256SUMS`. Only people with write access can see a draft. Until it's published, everyone else finds no release: the README's download link reaches "There aren't any releases here", and the tag's page lists only GitHub's automatic **Source code** archives, which are easy to mistake for the app. Only this workflow has `contents: write`; CI remains read-only. The release workflow does not publish the release or create a missing tag. A rerun for a tag with an existing release fails rather than overwriting it; inspect the existing draft and assets before any owner cleanup.
+6. Download the draft assets and verify their checksum. Extract the zip to a temporary directory, verify the app's signature and both architectures, then test native/Rosetta launches and installation on a second user account. Install there by following the README's [install steps](../README.md#install) as written, and correct them if a macOS dialog differs. Review the notes and replace any fallback text.
+7. For the first release, make the repository public, enable Private vulnerability reporting under Settings → Advanced Security, and set up protection for `main`. Add the repository description and topics, and a contact method on your GitHub profile for conduct reports.
+8. **Publish the release.** This is the step that makes the app downloadable. On the repository's **Releases** page, open the draft, click **Edit**, leave **Set as the latest release** selected and click **Publish release**. From a terminal, `gh release edit "v$version" --draft=false --latest` does the same.
+9. Signed out, for example in a private browser window, open the README's **Download for macOS** link. It must show the new release with `Palpebra-<version>.zip` and `SHA256SUMS` under **Assets**, above the two Source code archives. Download the zip from there and check it against `SHA256SUMS`.
 
-On the first run, and after runner or Xcode updates, check the workflow logs: the selected Xcode's Swift minor version should match local development and every action major version must be available, or pin the actions to reviewed commit SHAs. Local agents never push tags, create GitHub releases or launch the app.
+On the first run, and after runner or Xcode updates, check the workflow logs: the selected Xcode's Swift minor version should match local development and every action major version must be available, or pin the actions to reviewed commit SHAs. Local agents never push tags, create or publish GitHub releases, or launch the app.
 
 For an offline check of the same packaging on a clean, already-tagged checkout:
 

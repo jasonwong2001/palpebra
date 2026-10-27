@@ -71,7 +71,7 @@ Free and open source. *Palpebra* is Latin for eyelid.
 Palpebra runs on macOS 13 Ventura or later, on Apple silicon and Intel Macs.
 
 1. Download `Palpebra-1.0.0.zip` from [Releases](https://github.com/jasonwong2001/palpebra/releases), unzip it and move **Palpebra** to your Applications folder.
-2. Open it. Palpebra isn't notarized by Apple (that needs a paid developer account), so macOS asks you to confirm the first launch:
+2. Open it. Palpebra isn't notarized by Apple (the developer doesn't have a paid developer account yet), so macOS asks you to confirm the first launch:
    - **macOS 15 or later:** open **System Settings → Privacy & Security** and click **Open Anyway**.
    - **macOS 13 or 14:** Control-click Palpebra in Finder, choose **Open**, then confirm.
 3. Find Palpebra in the menu bar. Closing its window keeps reminders running.
@@ -110,14 +110,18 @@ With the defaults (a reminder after 45 minutes, 5-minute breaks), each minute of
 
 ## Build from source
 
-You need Xcode or the Command Line Tools with Swift 6.2 or later.
+You need Xcode or the Command Line Tools with Swift 6.2 or later. To get the Command Line Tools, which include `git`, run `xcode-select --install`. Then clone the repository and build it:
 
 ```sh
+git clone https://github.com/jasonwong2001/palpebra.git
+cd palpebra
 swift build
 ./scripts/test.sh
 ./scripts/make-app.sh
 open build/Palpebra.app
 ```
+
+If you downloaded a Source code archive instead, unzip it, `cd` into the folder (for example `palpebra-1.0.0`) and run the same commands starting from `swift build`. Archives don't include git history, so use `BUILD_NUMBER=1 ./scripts/make-app.sh` in place of `./scripts/make-app.sh`.
 
 See [Contributing](CONTRIBUTING.md) for checks and guidelines, [Architecture](docs/ARCHITECTURE.md) for how it works inside, [Releasing](docs/RELEASING.md) for packaging, and the [Roadmap](docs/ROADMAP.md) for ideas after 1.0.
 
